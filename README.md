@@ -1,4 +1,4 @@
-# hw-02
+# Ex-06: Classifying Spam Emails
 
 ## Objective:
 
