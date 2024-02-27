@@ -1,161 +1,138 @@
 # hw-02
 
-For any exercise where you’re writing code, insert a code chunk and make
-sure to label the chunk. Use a short and informative label. For any
-exercise where you’re creating a plot, make sure to label all axes,
-legends, etc. and give it an informative title. For any exercise where
-you’re including a description and/or interpretation, use full
-sentences. Make a commit at least after finishing each exercise, or
-better yet, more frequently. Push your work regularly to GitHub, and make sure 
-all checks pass.
+## Objective:
 
----
+Apply and evaluate different classification models to predict high-risk credit individuals using financial traits, focusing on understanding model performance through various evaluation metrics.
 
-# Exploratory Data Analysis and Data Preprocessing Exercise
+**Prerequisites:** Ensure you have Python, Jupyter Notebook, and the required libraries (**`pandas`**, **`numpy`**, **`scikit-learn`**, **`matplotlib`**, **`seaborn`**, **`mord`**) installed. The dataset **`spam.csv`** should be available in the **`data`** directory.
 
-Welcome to your Exploratory Data Analysis and Data Preprocessing Exercise. This assignment is crucial for anyone diving into the field of data mining and data analysis. Your main objective in this exercise will be to conduct thorough exploratory data analysis (EDA) followed by meticulous data preprocessing on a given dataset. The dataset will be provided to you, and it will require a combination of Python and its powerful libraries, NumPy and Pandas, to uncover insights and prepare the data for any subsequent modeling tasks.
+## Dataset:
 
-You will be expected to read in a dataset from the #[TidyTuesday 2023 datasets](https://github.com/rfordatascience/tidytuesday/tree/master/data/2023) for the purpose of exploratory data analysis and preprocessing. 
+The data this week comes from Vincent Arel-Bundock's Rdatasets package(<https://vincentarelbundock.github.io/Rdatasets/index.html>).
 
-### Objective
-Investigate the relationship between regional socioeconomic categories and the allocation of daily hours across countries. Analyze how the uncertainty in these allocations correlates with regional demographics and population sizes.
+> Rdatasets is a collection of 2246 datasets which were originally distributed alongside the statistical software environment R and some of its add-on packages. The goal is to make these data more broadly accessible for teaching and statistical software development.
 
-### Dataset
+We're working with the [spam email](https://vincentarelbundock.github.io/Rdatasets/doc/DAAG/spam7.html) dataset. This is a subset of the [spam e-mail database](https://search.r-project.org/CRAN/refmans/kernlab/html/spam.html).
 
-- [**Global Human Day**](https://github.com/rfordatascience/tidytuesday/tree/master/data/2023/2023-09-12)
-- Use at least datasets `all_countries.csv` and `country_regions.csv`. 
+This is a dataset collected at Hewlett-Packard Labs by Mark Hopkins, Erik Reeber, George Forman, and Jaap Suermondt and shared with the [UCI Machine Learning Repository](https://archive.ics.uci.edu/dataset/94/spambase). The dataset classifies 4601 e-mails as spam or non-spam, with additional variables indicating the frequency of certain words and characters in the e-mail.
 
-The completion of this exercise is divided into two main parts:
+### Metadata
 
-- **Part 1: Exploratory Data Analysis**
-- **Part 2: Data Preprocessing**
+| Variable  | Class     | Description                                                              |
+|-----------|-----------|--------------------------------------------------------------------------|
+| `crl.tot` | double    | Total length of uninterrupted sequences of capitals                      |
+| `dollar`  | double    | Occurrences of the dollar sign, as percent of total number of characters |
+| `bang`    | double    | Occurrences of `!`, as percent of total number of characters             |
+| `money`   | double    | Occurrences of `money`, as percent of total number of characters         |
+| `n000`    | double    | Occurrences of the string `000`, as percent of total number of words     |
+| `make`    | double    | Occurrences of `make`, as a percent of total number of words             |
+| `yesno`   | character | Outcome variable, a factor with levels `n` not spam, `y` spam            |
 
-Before you start, ensure you have the latest versions of `Python`, `NumPy`, and `Pandas` installed on your system. Good documentation and commenting of your code are mandatory to make your code easy to understand.
+(Source: [TidyTuesday](https://github.com/rfordatascience/tidytuesday/blob/master/data/2023/2023-08-15/readme.md))
 
----
+## Question:
 
-## Part 1: Exploratory Data Analysis 
+Can we predict whether an email is Spam or not using decision tree classification?
 
-In this section, you will perform an exploratory data analysis on the provided dataset. You will identify patterns, detect outliers, and generate insights based on your findings.
+## **Step 1: Setup and Data Preprocessing**
 
-### Task 1: Data Overview 
-- Load the dataset into a Pandas DataFrame and display the first few rows.
-- Provide a basic description of the dataset, including its shape, columns, and data types.
+-   Start by importing the necessary libraries and load the **`spam.csv`** dataset.
 
-<details>
-  <summary><h3><b>Hint</b></h3></summary>
+-   Preprocess the data by encoding categorical variables, defining features and target, and splitting the data into training and testing sets. Finally, apply PCA to reduce dimensionality.
 
-- Use functions like `.head()`, `.shape`, `.columns`, and `.dtypes` to get an overview of your DataFrame.
-- Remember that `.info()` can be used to get a concise summary of the DataFrame including the non-null count and type of each column.
+    ```{python}
+    # Import libraries
+    import pandas as pd
+    import numpy as np
+    from sklearn.preprocessing import LabelEncoder
+    from sklearn.decomposition import PCA
+    from sklearn.model_selection import train_test_split
 
-</details>
+    # Load the dataset
+    spam = pd.read_csv("data/spam.csv")
 
-### Task 2: Univariate Analysis 
-- For numerical features, calculate descriptive statistics and create histograms.
-- For categorical features, count unique values and create bar plots.
+    # Encode categorical variables
+    categorical_columns = spam.select_dtypes(include = ['object', 'category']).columns.tolist()
+    label_encoders = {col: LabelEncoder() for col in categorical_columns}
+    for col in categorical_columns:
+        spam[col] = label_encoders[col].fit_transform(spam[col])
 
-<details>
-  <summary><h3><b>Hint</b></h3></summary>
+    # Define features and target
+    X = spam.drop('yesno', axis = 1)
+    y = spam['yesno']
 
-- Use `.describe()` for a quick statistical summary of the numerical features.
-- Utilize `matplotlib` or `seaborn` libraries to create histograms (`hist()` or `sns.histplot()`).
-- For categorical data, `value_counts()` can help in understanding the distribution of classes, and you can plot the results using `bar()` or `sns.countplot()`.
+    # Split the data
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 42)
 
-</details>
+    # Reduce dimensionality
+    pca = PCA(n_components = 2)
+    X_train_pca = pca.fit_transform(X_train)
+    X_test_pca = pca.transform(X_test)
+    ```
 
-### Task 3: Bivariate Analysis 
-- Choose three pairs of numerical variables and create scatter plots to explore their relationships.
-- Create boxplots for one numerical variable grouped by a categorical variable.
+## **Step 2: Model Training and Decision Boundary Visualization**
 
-<details>
-  <summary><h3><b>Hint</b></h3></summary>
+-   Train a Decision Tree classifier on the PCA-transformed training data.
 
-- When creating scatter plots with `plt.scatter()` or `sns.scatterplot()`, it might be helpful to color points by a third categorical variable using the hue parameter in Seaborn.
-- Use `sns.boxplot()` to create boxplots. Consider using the hue parameter if you have sub-categories within your categorical variable.
+-   Implement and use the **`decisionplot`** function to visualize the decision boundary of your trained model.
 
-</details>
+```{python}
+#| eval: false
+from sklearn.tree import DecisionTreeClassifier
+import matplotlib.pyplot as plt
 
-### Task 4: Missing Data and Outliers 
-- Identify any missing values in the dataset.
-- Detect outliers in the numerical features using an appropriate method (e.g., Z-score, IQR).
+# Train Decision Tree
+dtree = DecisionTreeClassifier()
+dtree.fit(X_train_pca, y_train)
 
-<details>
-  <summary><h3><b>Hint</b></h3></summary>
+# Implement the decisionplot function (as provided in the lecture content)
+# Add the decisionplot function here
 
-- The `.isnull()` method chained with `.sum()` can help identify missing values.
-- Consider using the `scipy.stats` module for Z-score computation or the `IQR` which is the range between the first and third quartile of your data distribution for outlier detection.
+# Visualize decision boundary
+decisionplot(dtree, pd.DataFrame(X_train_pca, columns = ['PC1', 'PC2']), y_train)
 
-</details>
+```
 
-## Part 2: Data Preprocessing 
+## **Step 3: Model Evaluation**
 
-This section will focus on cleaning and preparing the dataset for modeling. You will correct any issues you found during the EDA phase.
+-   Evaluate your model using accuracy, precision, recall, F1 score, and AUC-ROC metrics.
 
-### Task 1: Handling Missing Values 
-- Choose appropriate methods to handle the missing data (e.g., imputation, removal).
+```{python}
+#| eval: false
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, roc_curve, auc
+from sklearn.preprocessing import label_binarize
 
-<details>
-  <summary><h3><b>Hint</b></h3></summary>
+# Predictions
+predictions = dtree.predict(X_test_pca)
 
-- Imputation methods could involve using `.fillna()` with measures like mean (`data.mean()`) for numerical columns and mode (`data.mode().iloc[0]`) for categorical columns.
-- For removal, `.dropna()` is straightforward but consider the impact on your dataset size.
+# Evaluate metrics
+accuracy = accuracy_score(y_test, predictions)
+precision = precision_score(y_test, predictions, average = 'weighted')
+recall = recall_score(y_test, predictions, average = 'weighted')
+f1 = f1_score(y_test, predictions, average = 'weighted')
 
-</details>
+# Display results
+print(f"Accuracy: {accuracy:.2f}")
+print(f"Precision: {precision:.2f}")
+print(f"Recall: {recall:.2f}")
+print(f"F1 Score: {f1:.2f}")
 
-### Task 2: Dealing with Outliers 
-- Treat or remove the outliers identified earlier based on your chosen methodology.
+# For AUC-ROC, binarize the output and calculate AUC-ROC for each class
+# Add the necessary code for AUC-ROC calculation here (refer to lecture content)
+```
 
-<details>
-  <summary><h3><b>Hint</b></h3></summary>
+## **Assignment:**
 
-- For outlier removal, you may use boolean indexing based on Z-scores or IQR to filter your data.
-- If you don't want to remove outliers, consider transforming them using methods such as log transformation.
+-   Implement the missing parts of the code: the **`decisionplot`** function and AUC-ROC calculation.
 
-</details>
+-   Discuss the results among your peers. Consider the following:
 
-### Task 3: Feature Engineering 
-- Create at least one new feature that could be useful for a data mining task.
+    -   Which metric is most informative for this problem and why?
 
-<details>
-  <summary><h3><b>Hint</b></h3></summary>
+    -   How does the decision boundary visualization help in understanding the model's performance?
 
-- Think about the domain knowledge related to your dataset that could suggest new features. For instance, if you have date-time information, extracting the day of the week could be useful.
-- Also, combining features, if relevant, to create ratios or differences can often reveal useful insights.
+    -   Reflect on the impact of PCA on model performance and decision boundary.
 
-</details>
+## **Submission:**
 
-### Task 4: Data Transformation 
-- Standardize or normalize numerical features.
-- Perform any additional transformations you deem necessary (e.g., encoding categorical variables, binning, etc.).
-
-<details>
-  <summary><h3><b>Hint</b></h3></summary>
-
-- For scaling, `StandardScaler` or `MinMaxScaler` from `sklearn.preprocessing` can be applied to numerical features.
-- For normalization, `np.log1p()` (log(1+x)) can help in managing skewed data.
-- Use `pd.get_dummies()` or `LabelEncoder`/`OneHotEncoder` from `sklearn.preprocessing` for encoding categorical variables.
-
-</details>
-
----
-
-**Deliverables:**
-- A Jupyter Notebook (with Quarto yaml configuration) containing all code and visualizations.
-- A written report summarizing your findings from the EDA, the decisions you made during preprocessing, and the rationale behind your choices.
-
-**Submission Guidelines:**
-- Push your Jupyter Notebook to your GitHub repository.
-- Ensure your commit messages are descriptive.
-- Submit the link to your GitHub repository on the course submission page.
-
-**Grading Rubric:**
-Your work will be evaluated based on the following criteria:
-- Correctness and completeness of the code.
-- Quality and clarity of the visualizations and summary report.
-- Proper use of comments and documentation in the code.
-- Adherence to the submission guidelines.
-
-**Points Distribution:**
-Each task is allocated a specific number of points. Points will be awarded based on the completeness and correctness of the work submitted. Be sure to follow best practices in data analysis and provide interpretations for your findings and decisions during preprocessing.
-
-Good luck, and may your insights be profound!
+-   Submit your Jupyter Notebook via GitHub with implemented code and a brief summary of your discussion findings regarding model evaluation and the impact of PCA.
